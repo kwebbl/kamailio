@@ -88,6 +88,7 @@ int _tps_clean_interval = 60;
 static int _tps_eventrt_outgoing = -1;
 static str _tps_eventrt_callback = STR_NULL;
 static str _tps_eventrt_name = str_init("topos:msg-outgoing");
+str _tps_contact_host = str_init("");
 
 sanity_api_t scb;
 
@@ -122,6 +123,7 @@ static param_export_t params[]={
 	{"dialog_expire",	PARAM_INT, &_tps_dialog_expire},
 	{"clean_interval",	PARAM_INT, &_tps_clean_interval},
 	{"event_callback",	PARAM_STR, &_tps_eventrt_callback},
+	{"contact_host",	PARAM_STR, &_tps_contact_host},
 	{0,0,0}
 };
 
