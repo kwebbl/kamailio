@@ -88,7 +88,9 @@ int _tps_clean_interval = 60;
 static int _tps_eventrt_outgoing = -1;
 static str _tps_eventrt_callback = STR_NULL;
 static str _tps_eventrt_name = str_init("topos:msg-outgoing");
-str _tps_contact_host = str_init("");
+str _tps_contact = str_init("");
+sip_uri_t _tps_contact_uri;
+
 
 sanity_api_t scb;
 
@@ -123,7 +125,7 @@ static param_export_t params[]={
 	{"dialog_expire",	PARAM_INT, &_tps_dialog_expire},
 	{"clean_interval",	PARAM_INT, &_tps_clean_interval},
 	{"event_callback",	PARAM_STR, &_tps_eventrt_callback},
-	{"contact_host",	PARAM_STR, &_tps_contact_host},
+	{"contact_host",	PARAM_STR, &_tps_contact},
 	{0,0,0}
 };
 
@@ -177,6 +179,14 @@ static int mod_init(void)
 					_tps_storage.len, _tps_storage.s);
 			return -1;
 		}
+	}
+
+	if(_tps_contact.len) {
+		if(parse_uri(_tps_contact.s, _tps_contact.len, &_tps_contact_uri)<0) {
+			LM_ERR("failed to parse the contact_uri param [%.*s]\n",
+					_tps_contact.len, _tps_contact.s);
+		}
+		LM_INFO("contact_uri set[%s]\n", _tps_contact.s);
 	}
 
 	if(_tps_sanity_checks!=0) {
