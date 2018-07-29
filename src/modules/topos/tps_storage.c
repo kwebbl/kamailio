@@ -53,8 +53,7 @@ extern sruid_t _tps_sruid;
 extern db1_con_t* _tps_db_handle;
 extern db_func_t _tpsdbf;
 
-extern str _tps_contact;
-extern sip_uri_t _tps_contact_uri;
+extern str _tps_contact_host;
 
 #define TPS_STORAGE_LOCK_SIZE	1<<9
 static gen_lock_set_t *_tps_storage_lock_set = NULL;
@@ -210,8 +209,6 @@ int tps_storage_fill_contact(sip_msg_t *msg, tps_data_t *td, str *uuid, int dir)
 {
 	str sv;
 	sip_uri_t puri;
-	sip_uri_t *contact_uri;
-	int contact_len=0;
 	int i;
 
 	if(dir==TPS_DIR_DOWNSTREAM) {
@@ -224,17 +221,14 @@ int tps_storage_fill_contact(sip_msg_t *msg, tps_data_t *td, str *uuid, int dir)
 		return 0;
 	}
 
-	if (_tps_contact.len) {
-		contact_uri = &_tps_contact_uri;
-		contact_len = _tps_contact.len;
-	} else {
-		if (parse_uri(sv.s, sv.len, &puri) < 0) {
-			LM_ERR("failed to parse the uri\n");
-			return -1;
-		}
-		contact_uri = &puri;
-		contact_len = sv.len;
+	if (parse_uri(sv.s, sv.len, &puri) < 0) {
+		LM_ERR("failed to parse the uri\n");
+		return -1;
 	}
+
+	int contact_len = sv.len;
+	if (_tps_contact_host.len)
+		contact_len = sv.len - puri.host.len + _tps_contact_host.len;
 
 	if(td->cp + 8 + (2*uuid->len) + contact_len >= td->cbuf + TPS_DATA_SIZE) {
 		LM_ERR("insufficient data buffer\n");
@@ -278,20 +272,25 @@ int tps_storage_fill_contact(sip_msg_t *msg, tps_data_t *td, str *uuid, int dir)
 	*td->cp = '@';
 	td->cp++;
 
-	memcpy(td->cp, contact_uri->host.s, contact_uri->host.len);
-	td->cp += contact_uri->host.len;
+	if (_tps_contact_host.len) { // using configured hostname in the contact header
+		memcpy(td->cp, _tps_contact_host.s, _tps_contact_host.len);
+		td->cp += _tps_contact_host.len;
+	} else {
+		memcpy(td->cp, puri.host.s, puri.host.len);
+		td->cp += puri.host.len;
+	}
 
-	if(contact_uri->port.len>0) {
+	if(puri.port.len>0) {
 		*td->cp = ':';
 		td->cp++;
-		memcpy(td->cp, contact_uri->port.s, contact_uri->port.len);
-		td->cp += contact_uri->port.len;
+		memcpy(td->cp, puri.port.s, puri.port.len);
+		td->cp += puri.port.len;
 	}
-	if(contact_uri->transport_val.len>0) {
+	if(puri.transport_val.len>0) {
 		memcpy(td->cp, ";transport=", 11);
 		td->cp += 11;
-		memcpy(td->cp, contact_uri->transport_val.s, contact_uri->transport_val.len);
-		td->cp += contact_uri->transport_val.len;
+		memcpy(td->cp, puri.transport_val.s, puri.transport_val.len);
+		td->cp += puri.transport_val.len;
 	}
 
 	*td->cp = '>';
