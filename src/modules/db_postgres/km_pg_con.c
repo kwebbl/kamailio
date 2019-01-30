@@ -37,6 +37,8 @@
 #include <netinet/tcp.h>
 
 
+extern int pg_bytea_output_escape;
+
 /*!
  * \brief Create a new connection
  *
@@ -52,6 +54,7 @@ struct pg_con *db_postgres_new_connection(struct db_id *id)
 	int i = 0;
 	const char *keywords[10], *values[10];
 	char to[16];
+	PGresult *res = NULL;
 
 	LM_DBG("db_id = %p\n", id);
 
@@ -62,9 +65,7 @@ struct pg_con *db_postgres_new_connection(struct db_id *id)
 
 	ptr = (struct pg_con *)pkg_malloc(sizeof(struct pg_con));
 	if(!ptr) {
-		LM_ERR("failed trying to allocated %lu bytes for connection structure."
-			   "\n",
-				(unsigned long)sizeof(struct pg_con));
+		PKG_MEM_ERROR_FMT("%lu bytes for connection structure", (unsigned long)sizeof(struct pg_con));
 		return 0;
 	}
 	LM_DBG("%p=pkg_malloc(%lu)\n", ptr, (unsigned long)sizeof(struct pg_con));
@@ -141,6 +142,16 @@ struct pg_con *db_postgres_new_connection(struct db_id *id)
 	}
 #endif
 
+	if(pg_bytea_output_escape!=0) {
+		res = PQexec(ptr->con, "SET bytea_output=escape");
+		if (PQresultStatus(res) != PGRES_COMMAND_OK)
+		{
+			LM_ERR("cannot set blob output escaping format\n");
+			PQclear(res);
+			goto err;
+		}
+		PQclear(res);
+	}
 	return ptr;
 
 err:

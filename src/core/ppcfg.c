@@ -32,6 +32,7 @@
 #include "dprint.h"
 
 #include "ppcfg.h"
+#include "fmsg.h"
 
 typedef struct _pp_subst_rule {
 	char *indata;
@@ -57,7 +58,7 @@ int pp_subst_add(char *data)
 	pr = (pp_subst_rule_t*)pkg_malloc(sizeof(pp_subst_rule_t));
 	if(pr==NULL)
 	{
-		LM_ERR("no more pkg\n");
+		PKG_MEM_ERROR;
 		return -1;
 	}
 	memset(pr, 0, sizeof(pp_subst_rule_t));
@@ -184,7 +185,8 @@ int pp_subst_run(char **data)
 	i = 0;
 	while(pr)
 	{
-		result=subst_str(*data, 0,
+		sip_msg_t *fmsg = faked_msg_get_next();
+		result=subst_str(*data, fmsg,
 				(struct subst_expr*)pr->ppdata, 0); /* pkg malloc'ed result */
 		if(result!=NULL)
 		{
