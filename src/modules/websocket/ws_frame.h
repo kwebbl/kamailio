@@ -40,7 +40,8 @@ enum
 {
 	KEEPALIVE_MECHANISM_NONE = 0,
 	KEEPALIVE_MECHANISM_PING = 1,
-	KEEPALIVE_MECHANISM_PONG = 2
+	KEEPALIVE_MECHANISM_PONG = 2,
+	KEEPALIVE_MECHANISM_CONCHECK = 3
 };
 #define DEFAULT_KEEPALIVE_MECHANISM KEEPALIVE_MECHANISM_PING
 extern int ws_keepalive_mechanism;
@@ -48,8 +49,8 @@ extern int ws_keepalive_mechanism;
 #define DEFAULT_KEEPALIVE_TIMEOUT 180 /* seconds */
 
 extern str ws_ping_application_data;
-#define DEFAULT_PING_APPLICATION_DATA SERVER_HDR
-#define DEFAULT_PING_APPLICATION_DATA_LEN SERVER_HDR_LEN
+#define DEFAULT_PING_APPLICATION_DATA SRVAPP_SIGNATURE
+#define DEFAULT_PING_APPLICATION_DATA_LEN SRVAPP_SIGNATURE_LEN
 
 extern stat_var *ws_failed_connections;
 extern stat_var *ws_local_closed_connections;

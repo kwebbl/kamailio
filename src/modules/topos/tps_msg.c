@@ -163,8 +163,7 @@ int tps_add_headers(sip_msg_t *msg, str *hname, str *hbody, int hpos)
 	hs.len = hname->len + 2 + hbody->len;
 	hs.s  = (char*)pkg_malloc(hs.len + 3);
 	if (hs.s==NULL) {
-		LM_ERR("no pkg memory left (%.*s - %d)\n",
-				hname->len, hname->s, hs.len);
+		PKG_MEM_ERROR_FMT("(%.*s - %d)\n", hname->len, hname->s, hs.len);
 		return -1;
 	}
 	memcpy(hs.s, hname->s, hname->len);
@@ -346,7 +345,7 @@ int tps_pack_message(sip_msg_t *msg, tps_data_t *ptsd)
 			i++;
 			vlen = tps_skip_rw(via->name.s, via->bsize);
 			if(ptsd->cp + vlen + 2 >= ptsd->cbuf + TPS_DATA_SIZE) {
-				LM_ERR("no more spage to pack via headers\n");
+				LM_ERR("no more space to pack via headers\n");
 				return -1;
 			}
 			if(i>1) {
@@ -393,7 +392,7 @@ int tps_pack_message(sip_msg_t *msg, tps_data_t *ptsd)
 		for(rr =(rr_t*)hdr->parsed; rr; rr=rr->next) {
 			i++;
 			if(ptsd->cp + rr->nameaddr.uri.len + 4 >= ptsd->cbuf + TPS_DATA_SIZE) {
-				LM_ERR("no more spage to pack rr headers\n");
+				LM_ERR("no more space to pack rr headers\n");
 				return -1;
 			}
 			if(isreq==1) {

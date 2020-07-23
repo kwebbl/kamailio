@@ -92,6 +92,10 @@ Chapter 1. Admin Guide
    routing block configurations. It adds new features similar to the
    textops module (textops eXtentions).
 
+   Note: If you add or remove message parts (header, body etc..) it may be
+   required to execute msg_apply_changes() from this module if there are
+   other operations done on the SIP message later on.
+
 2. Functions
 
    2.1. msg_apply_changes()
@@ -234,8 +238,8 @@ ot exists add new header
 
    Insert new header value before an existing header, if no index acquired
    insert before first hf header. Note that a header may consist of comma
-   delimited list of values. To insert value behind last value use
-   appenf_hf_value.
+   delimited list of values. To insert a value behind the last value use
+   append_hf_value.
 
    Meaning of the parameters is as follows:
      * hf - Header field to be appended. Format: HFNAME [ [IDX] ]. If

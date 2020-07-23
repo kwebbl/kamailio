@@ -64,6 +64,7 @@
  * -1: error
  *  1: text or sdp
  *  2: multipart
+ *  3: trickle ice sdp fragment
  */
 int check_content_type(struct sip_msg *msg)
 {
@@ -133,8 +134,11 @@ int check_content_type(struct sip_msg *msg)
 
 	advance(p,3,str_type,error_1);
 	x = READ(p-3) & 0x00ffffff;
-	if (!one_of_8(x,sdp_))
+	if (!one_of_8(x,sdp_)) {
+		if (strncasecmp(p-3, "trickle-ice-sdpfrag", 19) == 0)
+			return 3;
 		goto other;
+	}
 
 	if (*p==';'||*p==' '||*p=='\t'||*p=='\n'||*p=='\r'||*p==0) {
 		LM_DBG("type <%.*s> found valid\n", (int)(p-str_type.s), str_type.s);
@@ -227,7 +231,7 @@ int extract_body(struct sip_msg *msg, str *body )
 		/* p2 is text limit for application parsing */
 		rest = eat_line(p1 + mpdel.len + 2, p2 - p1 - mpdel.len - 2);
 		if ( rest > p2 ) {
-			LM_ERR("Unparsable <%.*s>\n", (int)(p1-p1), p1);
+			LM_ERR("Unparsable <%.*s>\n", (int)(p2-p1), p1);
 			return -1;
 		}
 		while( rest<p2 ) {
@@ -264,7 +268,7 @@ error:
 
 done:
 	/*LM_DBG("DEBUG:extract_body:=|%.*s|\n",body->len,body->s);*/
-	return 1;
+	return ret; /* mirrors return type of check_content_type */
 }
 
 /*

@@ -186,7 +186,7 @@ static int mod_init(void)
 	th_via_prefix.s = (char*)pkg_malloc(th_via_prefix.len+1);
 	if(th_via_prefix.s==NULL)
 	{
-		LM_ERR("via prefix parameter is invalid\n");
+		PKG_MEM_ERROR_FMT("via prefix parameter\n");
 		goto error;
 	}
 	/* 'sip:' + ip + ';' + param + '=' + prefix (+ '\0') */
@@ -195,7 +195,7 @@ static int mod_init(void)
 	th_uri_prefix.s = (char*)pkg_malloc(th_uri_prefix.len+1);
 	if(th_uri_prefix.s==NULL)
 	{
-		LM_ERR("uri prefix parameter is invalid\n");
+		PKG_MEM_ERROR_FMT("uri prefix parameter\n");
 		goto error;
 	}
 	/* build via prefix */
@@ -249,8 +249,14 @@ int th_prepare_msg(sip_msg_t *msg)
 			LM_DBG("non sip request message\n");
 			return 1;
 		}
-	} else if(msg->first_line.type!=SIP_REPLY) {
-		LM_DBG("non sip message\n");
+	} else if(msg->first_line.type==SIP_REPLY) {
+		if(!IS_SIP_REPLY(msg))
+		{
+			LM_DBG("non sip reply message\n");
+			return 1;
+		}
+	} else {
+		LM_DBG("unknown sip message type %d\n", msg->first_line.type);
 		return 1;
 	}
 
@@ -411,6 +417,7 @@ int th_msg_sent(sr_event_param_t *evp)
 	int direction;
 	int dialog;
 	int local;
+	str nbuf = STR_NULL;
 
 	obuf = (str*)evp->data;
 
@@ -497,7 +504,15 @@ int th_msg_sent(sr_event_param_t *evp)
 	}
 
 ready:
-	obuf->s = th_msg_update(&msg, (unsigned int*)&obuf->len);
+	nbuf.s = th_msg_update(&msg, (unsigned int*)&nbuf.len);
+	if(nbuf.s!=NULL) {
+		LM_DBG("new outbound buffer generated\n");
+		pkg_free(obuf->s);
+		obuf->s = nbuf.s;
+		obuf->len = nbuf.len;
+	} else {
+		LM_ERR("failed to generate new outbound buffer\n");
+	}
 
 done:
 	free_sip_msg(&msg);
@@ -554,7 +569,7 @@ int th_execute_event_route(sip_msg_t *msg, sr_event_param_t *evp)
 		run_top_route(event_rt.rlist[_th_eventrt_outgoing], fmsg, &ctx);
 	} else {
 		if(keng!=NULL) {
-			if(keng->froute(fmsg, EVENT_ROUTE,
+			if(sr_kemi_ctx_route(keng, &ctx, fmsg, EVENT_ROUTE,
 						&_th_eventrt_callback, &_th_eventrt_name)<0) {
 				LM_ERR("error running event route kemi callback\n");
 				p_onsend=NULL;

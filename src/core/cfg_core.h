@@ -67,6 +67,7 @@ struct cfg_group_core {
 	int dns_tls_pref;
 	int dns_sctp_pref;
 	int dns_retr_time;
+	int dns_slow_query_ms;
 	int dns_retr_no;
 	int dns_servers_no;
 	int dns_search_list;
@@ -102,11 +103,13 @@ struct cfg_group_core {
 	int mem_safety; /*!< memory safety control option */
 	int mem_join; /*!< memory free fragments join option */
 	int mem_status_mode; /*!< memory status printed for free/all fragments */
+	int sip_parser_log; /*!< sip msg parser error log level*/
 	int corelog; /*!< log level for non-critcal core error messages */
 	int latency_cfg_log; /*!< log level for printing latency of routing blocks */
 	int latency_log; /*!< log level for latency limits messages */
 	int latency_limit_db; /*!< alert limit of running db commands */
 	int latency_limit_action; /*!< alert limit of running cfg actions */
+	int latency_limit_cfg; /*!< alert limit of running cfg routing script */
 	int pv_cache_limit; /*!< alert limit of having too many vars in pv cache */
 	int pv_cache_action; /*!< action to be taken on pv cache limit */
 };

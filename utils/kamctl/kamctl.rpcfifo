@@ -23,7 +23,11 @@ fi
 ### parameters
 #
 if [ -z "$RPCFIFOPATH" ]; then
-	RPCFIFOPATH=/var/run/kamailio/kamailio_rpc.fifo
+	if [ -p "/var/run/kamailio/kamailio_rpc.fifo" ]; then
+		RPCFIFOPATH=/var/run/kamailio/kamailio_rpc.fifo
+	else
+		RPCFIFOPATH=/run/kamailio/kamailio_rpc.fifo
+	fi
 fi
 
 #
@@ -106,13 +110,13 @@ rpc_cmd()
 		CMD="${CMD}, \"params\": [${RPCVAL}"
 		RPCPARAMS="yes"
 	fi
-	shift
-	while [ -n "$1" ] ; do
-		rpcparamval "${1}"
-		CMD="${CMD}, ${RPCVAL}"
-		shift
-	done
 	if [ "$RPCPARAMS" = "yes" ]; then
+		shift
+		while [ -n "$1" ] ; do
+			rpcparamval "${1}"
+			CMD="${CMD}, ${RPCVAL}"
+			shift
+		done
 		CMD="${CMD}]"
 	fi
 	CMD="${CMD}, \"reply_name\": \"${name}\", \"id\": $$}\n"
@@ -149,12 +153,12 @@ rpc_cmd_print()
 		RPCPARAMS="yes"
 		shift
 	fi
-	while [ -n "$1" ] ; do
-		rpcparamval "${1}"
-		CMD="${CMD}, ${RPCVAL}"
-		shift
-	done
 	if [ "$RPCPARAMS" = "yes" ]; then
+		while [ -n "$1" ] ; do
+			rpcparamval "${1}"
+			CMD="${CMD}, ${RPCVAL}"
+			shift
+		done
 		CMD="${CMD}]"
 	fi
 	CMD="${CMD}, \"reply_name\": \"${name}\", \"id\": $$}\n"

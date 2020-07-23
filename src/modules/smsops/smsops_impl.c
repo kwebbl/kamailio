@@ -370,24 +370,24 @@ static int DecodePhoneNumber(char* buffer, int len, str phone) {
 // Generate a 7 Byte Long Time
 static void EncodeTime(char * buffer) {
 	time_t ts;
-	struct tm * now;
+	struct tm now;
 	int i = 0;
 
 	time(&ts);
 	/* Get GMT time */
-	now = gmtime(&ts);
+	gmtime_r(&ts, &now);
 
-	i = now->tm_year % 100;
+	i = now.tm_year % 100;
 	buffer[0] = (unsigned char)((((i % 10) << 4) | (i / 10)) & 0xff);
-	i = now->tm_mon + 1;
+	i = now.tm_mon + 1;
 	buffer[1] = (unsigned char)((((i % 10) << 4) | (i / 10)) & 0xff);
-	i = now->tm_mday;
+	i = now.tm_mday;
 	buffer[2] = (unsigned char)((((i % 10) << 4) | (i / 10)) & 0xff);
-	i = now->tm_hour;
+	i = now.tm_hour;
 	buffer[3] = (unsigned char)((((i % 10) << 4) | (i / 10)) & 0xff);
-	i = now->tm_min;
+	i = now.tm_min;
 	buffer[4] = (unsigned char)((((i % 10) << 4) | (i / 10)) & 0xff);
-	i = now->tm_sec;
+	i = now.tm_sec;
 	buffer[5] = (unsigned char)((((i % 10) << 4) | (i / 10)) & 0xff);
 	buffer[6] = 0; // Timezone, we use no time offset.
 }
@@ -469,7 +469,7 @@ int decode_3gpp_sms(struct sip_msg *msg) {
 		if (!rp_data) {
 			rp_data = (sms_rp_data_t*)pkg_malloc(sizeof(struct _sms_rp_data));
 			if (!rp_data) {
-				LM_ERR("Error allocating %lu bytes!\n", sizeof(struct _sms_rp_data));
+				LM_ERR("Error allocating %lu bytes!\n", (unsigned long)sizeof(struct _sms_rp_data));
 				return -1;
 			}
 		} else {
@@ -543,7 +543,7 @@ int decode_3gpp_sms(struct sip_msg *msg) {
 
 						// Check for malicious length, which might cause buffer overflow
 						if(udh_len > body.len - p) {
-							LM_ERR("TP-User-Data-Lenght is bigger than the remaining message buffer!\n");
+							LM_ERR("TP-User-Data-Length is bigger than the remaining message buffer!\n");
 							return -1;
 						}
 
@@ -564,7 +564,7 @@ int decode_3gpp_sms(struct sip_msg *msg) {
 
 							// Check for malicious length, which might cause buffer overflow
 							if(udh_read + ie->data.len + 2 /* two octets are read so far */ > udh_len) {
-								LM_ERR("IE Lenght for IE id %d is bigger than the remaining User-Data element!\n",
+								LM_ERR("IE Length for IE id %d is bigger than the remaining User-Data element!\n",
 																									ie->identifier);
 								pkg_free(ie);
 								return -1;
@@ -573,7 +573,7 @@ int decode_3gpp_sms(struct sip_msg *msg) {
 							if(ie->identifier == TP_UDH_IE_CONCAT_SM_8BIT_REF) {
 								if(contains_8bit_refnum) {
 									pkg_free(ie);
-									LM_ERR("IE Concatenated Short Message 8bit Reference occured more than once in UDH\n");
+									LM_ERR("IE Concatenated Short Message 8bit Reference occurred more than once in UDH\n");
 									return -1;
 								}
 
@@ -846,7 +846,7 @@ int pv_set_sms(struct sip_msg* msg, pv_param_t *param, int op, pv_value_t *val) 
 	if (!rp_send_data) {
 		rp_send_data = (sms_rp_data_t*)pkg_malloc(sizeof(struct _sms_rp_data));
 		if (!rp_send_data) {
-			LM_ERR("Error allocating %lu bytes!\n", sizeof(struct _sms_rp_data));
+			LM_ERR("Error allocating %lu bytes!\n", (unsigned long)sizeof(struct _sms_rp_data));
 			return -1;
 		}
 		// Initialize structure:

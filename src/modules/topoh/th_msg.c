@@ -275,6 +275,11 @@ int th_mask_contact(sip_msg_t *msg)
 	}
 
 	c = ((contact_body_t*)msg->contact->parsed)->contacts;
+	if(c == NULL)
+	{
+		LM_ERR("invalid contact header\n");
+		return -1;
+	}
 	in = c->uri;
 
 	out.s = th_mask_encode(in.s, in.len, &th_uri_prefix, &out.len);
@@ -289,7 +294,7 @@ int th_mask_contact(sip_msg_t *msg)
 		p = (char*)pkg_malloc(out.len+3);
 		if(p==NULL)
 		{
-			LM_ERR("failed to get more pkg\n");
+			PKG_MEM_ERROR;
 			pkg_free(out.s);
 			return -1;
 		}
@@ -413,13 +418,18 @@ int th_unmask_via(sip_msg_t *msg, str *cookie)
 					LM_ERR("cannot find param in via %d\n", i);
 					return -1;
 				}
-				if(i==2)
+				if(vp->value.len <= th_vparam_prefix.len) {
+					LM_ERR("invalid param len in via %d\n", i);
+					return -1;
+				}
+				if(i==2) {
 					out.s = th_mask_decode(vp->value.s, vp->value.len,
 							&th_vparam_prefix, CRLF_LEN+1, &out.len);
-				else
+				} else {
 					out.s = th_mask_decode(vp->value.s, vp->value.len,
 							&th_vparam_prefix, 0, &out.len);
-				if(out.s==NULL)
+				}
+				if(out.s==NULL || out.len<=0)
 				{
 					LM_ERR("cannot decode via %d\n", i);
 					return -1;
@@ -431,7 +441,7 @@ int th_unmask_via(sip_msg_t *msg, str *cookie)
 					via2=pkg_malloc(sizeof(struct via_body));
 					if (via2==0)
 					{
-						LM_ERR("out of memory\n");
+						PKG_MEM_ERROR;
 						pkg_free(out.s);
 						return -1;
 
@@ -549,6 +559,10 @@ int th_unmask_callid_str(str *icallid, str *ocallid)
 	}
 	out.s = th_mask_decode(icallid->s, icallid->len,
 					&th_callid_prefix, 0, &out.len);
+	if(out.s == NULL) {
+		LM_ERR("failed to decode call-id\n");
+		return -2;
+	}
 	if(out.len>=TH_CALLID_SIZE) {
 		pkg_free(out.s);
 		LM_ERR("not enough callid buf size (needed %d)\n", out.len);
@@ -949,7 +963,12 @@ int th_add_via_cookie(sip_msg_t *msg, struct via_body *via)
 	if (via->params.s) {
 		viap = via->params.s - via->hdr.s - 1;
 	} else {
-		viap = via->host.s - via->hdr.s + via->host.len;
+		if (via->host.s) {
+			viap = via->host.s - via->hdr.s + via->host.len;
+		} else {
+			LM_ERR("no via parameter and no via host, can't insert cookie\n");
+			return -1;
+		}
 		if (via->port!=0)
 			viap += via->port_str.len + 1; /* +1 for ':'*/
 	}
@@ -964,7 +983,7 @@ int th_add_via_cookie(sip_msg_t *msg, struct via_body *via)
 	out.s = (char*)pkg_malloc(out.len+1);
 	if(out.s==0)
 	{
-		LM_ERR("no pkg memory\n");
+		PKG_MEM_ERROR;
 		return -1;
 	}
 	out.s[0] = ';';
@@ -990,7 +1009,7 @@ int th_add_hdr_cookie(sip_msg_t *msg)
 	h.s = (char*)pkg_malloc(h.len+1);
 	if(h.s == 0)
 	{
-		LM_ERR("no more pkg\n");
+		PKG_MEM_ERROR;
 		return -1;
 	}
 	anchor = anchor_lump(msg, msg->unparsed - msg->buf, 0, 0);

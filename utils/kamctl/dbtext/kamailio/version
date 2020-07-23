@@ -1,4 +1,4 @@
-table_name(string) table_version(int) 
+id(int,auto) table_name(string) table_version(int) 
 version:1
 acc:5
 acc_cdrs:2
@@ -49,6 +49,7 @@ rls_watchers:3
 rtpengine:1
 rtpproxy:1
 sca_subscriptions:2
+secfilter:1
 silo:8
 sip_trace:4
 speed_dial:2
@@ -56,7 +57,7 @@ subscriber:7
 topos_d:1
 topos_t:1
 trusted:6
-uacreg:3
+uacreg:4
 uid_credentials:7
 uid_domain:2
 uid_domain_attrs:1

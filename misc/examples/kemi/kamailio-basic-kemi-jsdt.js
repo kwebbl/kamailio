@@ -18,7 +18,7 @@ var FLB_NATSIPPING=7
 function ksr_request_route()
 {
 	// KSR.sl.sl_send_reply(100,"Intelligent trying");
-	// KSR.info("===== request - from kamailio lua script\n");
+	// KSR.info("===== request - from kamailio javascript script\n");
 
 	// per request initial checks
 	ksr_route_reqinit();
@@ -219,10 +219,10 @@ function ksr_route_location()
 	if (rc<0) {
 		KSR.tm.t_newtran();
 		if (rc==-1 || rc==-3) {
-			KSR.sl.send_reply("404", "Not Found");
+			KSR.sl.send_reply(404, "Not Found");
 			KSR.x.exit();
 		} else if (rc==-2) {
-			KSR.sl.send_reply("405", "Method Not Allowed");
+			KSR.sl.send_reply(405, "Method Not Allowed");
 			KSR.x.exit();
 		}
 	}

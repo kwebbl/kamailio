@@ -71,6 +71,7 @@ union sockaddr_union{
 	struct sockaddr     s;
 	struct sockaddr_in  sin;
 	struct sockaddr_in6 sin6;
+	struct sockaddr_storage sas;
 };
 
 
@@ -91,6 +92,7 @@ typedef struct addr_info {
 typedef struct advertise_info {
 	str name; /* name - eg.: foo.bar or 10.0.0.1 */
 	unsigned short port_no;  /* port number */
+	short port_pad; /* padding field */
 	str port_no_str; /* port number converted to string -- optimization*/
 	str address_str;        /*ip address converted to string -- optimization*/
 	struct ip_addr address; /* ip address */
@@ -109,10 +111,13 @@ typedef struct socket_info {
 	struct socket_info* prev;
 	unsigned short port_no;  /* port number */
 	char proto; /* tcp or udp*/
+	char proto_pad0; /* padding field */
+	short proto_pad1; /* padding field */
 	str sock_str; /* Socket proto, ip, and port as string */
 	struct addr_info* addr_info_lst; /* extra addresses (e.g. SCTP mh) */
 	int workers; /* number of worker processes for this socket */
 	int workers_tcpidx; /* index of workers in tcp children array */
+	str sockname; /* socket name given in config listen value */
 	struct advertise_info useinfo; /* details to be used in SIP msg */
 #ifdef USE_MCAST
 	str mcast; /* name of interface that should join multicast group*/
@@ -143,7 +148,11 @@ typedef struct receive_info {
 										* the msg was received */
 	char proto;
 #ifdef USE_COMP
+	char proto_pad0;  /* padding field */
 	short comp; /* compression */
+#else
+	char proto_pad0;  /* padding field */
+	short proto_pad1; /* padding field */
 #endif
 	/* no need for dst_su yet */
 } receive_info_t;
@@ -153,13 +162,26 @@ typedef struct dest_info {
 	struct socket_info* send_sock;
 	union sockaddr_union to;
 	int id; /* tcp stores the connection id here */
-	char proto;
 	snd_flags_t send_flags;
+	char proto;
 #ifdef USE_COMP
+	char proto_pad0;  /* padding field */
 	short comp;
+#else
+	char proto_pad0;  /* padding field */
+	short proto_pad1; /* padding field */
 #endif
 } dest_info_t;
 
+
+typedef struct ksr_coninfo {
+	ip_addr_t src_ip;
+	ip_addr_t dst_ip;
+	unsigned short src_port; /* host byte order */
+	unsigned short dst_port; /* host byte order */
+	int proto;
+	socket_info_t *csocket;
+} ksr_coninfo_t;
 
 typedef struct sr_net_info {
 	str data;
@@ -167,6 +189,7 @@ typedef struct sr_net_info {
 	dest_info_t* dst;
 } sr_net_info_t;
 
+sr_net_info_t *ksr_evrt_rcvnetinfo_get(void);
 
 #define SND_FLAGS_INIT(sflags) \
 	do{ \
@@ -420,6 +443,7 @@ static inline void su2ip_addr(struct ip_addr* ip, union sockaddr_union* su)
 			break;
 		default:
 			LM_CRIT("unknown address family %d\n", su->s.sa_family);
+			memset(ip, 0, sizeof(ip_addr_t));
 	}
 }
 
@@ -777,11 +801,14 @@ static inline struct hostent* ip_addr2he(str* name, struct ip_addr* ip)
 	static char* p_aliases[1];
 	static char* p_addr[2];
 	static char address[16];
+	int len;
 
 	p_aliases[0]=0; /* no aliases*/
 	p_addr[1]=0; /* only one address*/
 	p_addr[0]=address;
-	strncpy(hostname, name->s, (name->len<256)?(name->len)+1:256);
+	len = (name->len<255)?name->len:255;
+	memcpy(hostname, name->s, len);
+	hostname[len] = '\0';
 	if (ip->len>16) return 0;
 	memcpy(address, ip->u.addr, ip->len);
 

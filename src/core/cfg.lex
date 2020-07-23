@@ -297,6 +297,7 @@ XAVPVIAPARAMS	xavp_via_params
 XAVPVIAFIELDS	xavp_via_fields
 LISTEN		listen
 ADVERTISE	advertise|ADVERTISE
+STRNAME		name|NAME
 ALIAS		alias
 SR_AUTO_ALIASES	auto_aliases
 DNS		 dns
@@ -309,6 +310,7 @@ DNS_TCP_PREF	dns_tcp_pref|dns_tcp_preference
 DNS_TLS_PREF	dns_tls_pref|dns_tls_preference
 DNS_SCTP_PREF	dns_sctp_pref|dns_sctp_preference
 DNS_RETR_TIME	dns_retr_time
+DNS_SLOW_QUERY_MS	dns_slow_query_ms
 DNS_RETR_NO		dns_retr_no
 DNS_SERVERS_NO	dns_servers_no
 DNS_USE_SEARCH	dns_use_search_list
@@ -328,6 +330,7 @@ DNS_CACHE_DEL_NONEXP	dns_cache_del_nonexp|dns_cache_delete_nonexpired
 DNS_CACHE_REC_PREF	dns_cache_rec_pref
 /* ipv6 auto bind */
 AUTO_BIND_IPV6		auto_bind_ipv6
+BIND_IPV6_LINK_LOCAL	bind_ipv6_link_local
 /* blacklist */
 DST_BLST_INIT	dst_blacklist_init
 USE_DST_BLST		use_dst_blacklist
@@ -343,6 +346,7 @@ IP_FREE_BIND		ip_free_bind|ipfreebind|ip_nonlocal_bind
 
 PORT	port
 STAT	statistics
+STATS_NAMESEP	stats_name_separator
 MAXBUFFER maxbuffer
 SQL_BUFFER_SIZE sql_buffer_size
 CHILDREN children
@@ -359,6 +363,7 @@ MEMSAFETY	"mem_safety"
 MEMJOIN		"mem_join"
 MEMSTATUSMODE		"mem_status_mode"
 CORELOG		"corelog"|"core_log"
+SIP_PARSER_LOG "sip_parser_log"
 SIP_WARNING sip_warning
 SERVER_SIGNATURE server_signature
 SERVER_HEADER server_header
@@ -373,9 +378,11 @@ MHOMED		mhomed
 DISABLE_TCP		"disable_tcp"
 TCP_CHILDREN	"tcp_children"
 TCP_ACCEPT_ALIASES	"tcp_accept_aliases"
+TCP_ACCEPT_UNIQUE	"tcp_accept_unique"
 TCP_SEND_TIMEOUT	"tcp_send_timeout"
 TCP_CONNECT_TIMEOUT	"tcp_connect_timeout"
 TCP_CON_LIFETIME	"tcp_connection_lifetime"
+TCP_CONNECTION_MATCH	"tcp_connection_match"
 TCP_POLL_METHOD		"tcp_poll_method"
 TCP_MAX_CONNECTIONS	"tcp_max_connections"
 TLS_MAX_CONNECTIONS	"tls_max_connections"
@@ -454,6 +461,8 @@ KEMI     "kemi"
 ONSEND_ROUTE_CALLBACK	"onsend_route_callback"
 REPLY_ROUTE_CALLBACK	"reply_route_callback"
 EVENT_ROUTE_CALLBACK	"event_route_callback"
+RECEIVED_ROUTE_CALLBACK	"received_route_callback"
+RECEIVED_ROUTE_MODE		"received_route_mode"
 
 MAX_RECURSIVE_LEVEL		"max_recursive_level"
 MAX_BRANCHES_PARAM		"max_branches"
@@ -462,6 +471,10 @@ LATENCY_CFG_LOG			latency_cfg_log
 LATENCY_LOG				latency_log
 LATENCY_LIMIT_DB		latency_limit_db
 LATENCY_LIMIT_ACTION	latency_limit_action
+LATENCY_LIMIT_CFG		latency_limit_cfg
+
+URI_HOST_EXTRA_CHARS	"uri_host_extra_chars"
+HDR_NAME_EXTRA_CHARS	"hdr_name_extra_chars"
 
 MSG_TIME	msg_time
 ONSEND_RT_REPLY		"onsend_route_reply"
@@ -702,6 +715,7 @@ IMPORTFILE      "import_file"
 <INITIAL>{XAVPVIAFIELDS}	{ yylval.strval=yytext; return XAVPVIAFIELDS; }
 <INITIAL>{LISTEN}	{ count(); yylval.strval=yytext; return LISTEN; }
 <INITIAL>{ADVERTISE}	{ count(); yylval.strval=yytext; return ADVERTISE; }
+<INITIAL>{STRNAME}	{ count(); yylval.strval=yytext; return STRNAME; }
 <INITIAL>{ALIAS}	{ count(); yylval.strval=yytext; return ALIAS; }
 <INITIAL>{SR_AUTO_ALIASES}	{ count(); yylval.strval=yytext;
 									return SR_AUTO_ALIASES; }
@@ -723,6 +737,8 @@ IMPORTFILE      "import_file"
 								return DNS_SCTP_PREF; }
 <INITIAL>{DNS_RETR_TIME}	{ count(); yylval.strval=yytext;
 								return DNS_RETR_TIME; }
+<INITIAL>{DNS_SLOW_QUERY_MS}	{ count(); yylval.strval=yytext;
+								return DNS_SLOW_QUERY_MS; }
 <INITIAL>{DNS_RETR_NO}	{ count(); yylval.strval=yytext;
 								return DNS_RETR_NO; }
 <INITIAL>{DNS_SERVERS_NO}	{ count(); yylval.strval=yytext;
@@ -757,6 +773,8 @@ IMPORTFILE      "import_file"
 								return DNS_CACHE_REC_PREF; }
 <INITIAL>{AUTO_BIND_IPV6}	{ count(); yylval.strval=yytext;
 								return AUTO_BIND_IPV6; }
+<INITIAL>{BIND_IPV6_LINK_LOCAL}	{ count(); yylval.strval=yytext;
+								return BIND_IPV6_LINK_LOCAL; }
 <INITIAL>{DST_BLST_INIT}	{ count(); yylval.strval=yytext;
 								return DST_BLST_INIT; }
 <INITIAL>{USE_DST_BLST}	{ count(); yylval.strval=yytext;
@@ -778,6 +796,7 @@ IMPORTFILE      "import_file"
 <INITIAL>{IP_FREE_BIND}	{ count(); yylval.strval=yytext; return IP_FREE_BIND; }
 <INITIAL>{PORT}	{ count(); yylval.strval=yytext; return PORT; }
 <INITIAL>{STAT}	{ count(); yylval.strval=yytext; return STAT; }
+<INITIAL>{STATS_NAMESEP}	{ count(); yylval.strval=yytext; return STATS_NAMESEP; }
 <INITIAL>{MAXBUFFER}	{ count(); yylval.strval=yytext; return MAXBUFFER; }
 <INITIAL>{SQL_BUFFER_SIZE}	{ count(); yylval.strval=yytext; return SQL_BUFFER_SIZE; }
 <INITIAL>{CHILDREN}	{ count(); yylval.strval=yytext; return CHILDREN; }
@@ -793,6 +812,7 @@ IMPORTFILE      "import_file"
 <INITIAL>{MEMSAFETY}	{ count(); yylval.strval=yytext; return MEMSAFETY; }
 <INITIAL>{MEMJOIN}	{ count(); yylval.strval=yytext; return MEMJOIN; }
 <INITIAL>{MEMSTATUSMODE}	{ count(); yylval.strval=yytext; return MEMSTATUSMODE; }
+<INITIAL>{SIP_PARSER_LOG}  { count(); yylval.strval=yytext; return SIP_PARSER_LOG; }
 <INITIAL>{CORELOG}	{ count(); yylval.strval=yytext; return CORELOG; }
 <INITIAL>{SIP_WARNING}	{ count(); yylval.strval=yytext; return SIP_WARNING; }
 <INITIAL>{USER}		{ count(); yylval.strval=yytext; return USER; }
@@ -805,6 +825,10 @@ IMPORTFILE      "import_file"
 <INITIAL>{TCP_CHILDREN}	{ count(); yylval.strval=yytext; return TCP_CHILDREN; }
 <INITIAL>{TCP_ACCEPT_ALIASES}	{ count(); yylval.strval=yytext;
 									return TCP_ACCEPT_ALIASES; }
+<INITIAL>{TCP_ACCEPT_UNIQUE}	{ count(); yylval.strval=yytext;
+									return TCP_ACCEPT_UNIQUE; }
+<INITIAL>{TCP_CONNECTION_MATCH}	{ count(); yylval.strval=yytext;
+									return TCP_CONNECTION_MATCH; }
 <INITIAL>{TCP_SEND_TIMEOUT}		{ count(); yylval.strval=yytext;
 									return TCP_SEND_TIMEOUT; }
 <INITIAL>{TCP_CONNECT_TIMEOUT}		{ count(); yylval.strval=yytext;
@@ -949,6 +973,8 @@ IMPORTFILE      "import_file"
 <INITIAL>{REPLY_ROUTE_CALLBACK}  { count(); yylval.strval=yytext; return REPLY_ROUTE_CALLBACK;}
 <INITIAL>{ONSEND_ROUTE_CALLBACK}  { count(); yylval.strval=yytext; return ONSEND_ROUTE_CALLBACK;}
 <INITIAL>{EVENT_ROUTE_CALLBACK}  { count(); yylval.strval=yytext; return EVENT_ROUTE_CALLBACK;}
+<INITIAL>{RECEIVED_ROUTE_CALLBACK}  { count(); yylval.strval=yytext; return RECEIVED_ROUTE_CALLBACK;}
+<INITIAL>{RECEIVED_ROUTE_MODE}  { count(); yylval.strval=yytext; return RECEIVED_ROUTE_MODE;}
 <INITIAL>{MAX_RECURSIVE_LEVEL}  { count(); yylval.strval=yytext; return MAX_RECURSIVE_LEVEL;}
 <INITIAL>{MAX_BRANCHES_PARAM}  { count(); yylval.strval=yytext; return MAX_BRANCHES_PARAM;}
 <INITIAL>{LATENCY_LOG}  { count(); yylval.strval=yytext; return LATENCY_LOG;}
@@ -957,11 +983,14 @@ IMPORTFILE      "import_file"
 <INITIAL>{ONSEND_RT_REPLY}	{ count(); yylval.strval=yytext; return ONSEND_RT_REPLY; }
 <INITIAL>{LATENCY_LIMIT_DB}  { count(); yylval.strval=yytext; return LATENCY_LIMIT_DB;}
 <INITIAL>{LATENCY_LIMIT_ACTION}  { count(); yylval.strval=yytext; return LATENCY_LIMIT_ACTION;}
+<INITIAL>{LATENCY_LIMIT_CFG}  { count(); yylval.strval=yytext; return LATENCY_LIMIT_CFG;}
 <INITIAL>{CFG_DESCRIPTION}	{ count(); yylval.strval=yytext; return CFG_DESCRIPTION; }
 <INITIAL>{LOADMODULE}	{ count(); yylval.strval=yytext; return LOADMODULE; }
 <INITIAL>{LOADPATH}		{ count(); yylval.strval=yytext; return LOADPATH; }
 <INITIAL>{MODPARAM}     { count(); yylval.strval=yytext; return MODPARAM; }
 <INITIAL>{CFGENGINE}	{ count(); yylval.strval=yytext; return CFGENGINE; }
+<INITIAL>{URI_HOST_EXTRA_CHARS}	{ yylval.strval=yytext; return URI_HOST_EXTRA_CHARS; }
+<INITIAL>{HDR_NAME_EXTRA_CHARS}	{ yylval.strval=yytext; return HDR_NAME_EXTRA_CHARS; }
 
 <INITIAL>{EQUAL}	{ count(); return EQUAL; }
 <INITIAL>{ADDEQ}          { count(); return ADDEQ; }
@@ -1709,7 +1738,7 @@ static int sr_pop_yy_state()
 
 /* define/ifdef support */
 
-#define MAX_DEFINES    256
+#define MAX_DEFINES    512
 static ksr_ppdefine_t pp_defines[MAX_DEFINES];
 static int pp_num_defines = 0;
 static int pp_define_type = 0;
@@ -1719,7 +1748,7 @@ static int pp_define_index = -1;
  * ifdef(defined), ifndef(undefined), or the opposite of these
  * two, but in an else branch
  */
-#define MAX_IFDEFS    256
+#define MAX_IFDEFS    512
 static int pp_ifdef_stack[MAX_IFDEFS];
 static int pp_sptr = 0; /* stack pointer */
 
@@ -1924,14 +1953,24 @@ static void pp_ifdef()
 
 static void pp_else()
 {
+	if(pp_sptr==0) {
+		LM_WARN("invalid position for preprocessor directive 'else'"
+				" - at %s line %d\n", (finame)?finame:"cfg", line);
+		return;
+	}
 	pp_ifdef_stack[pp_sptr-1] ^= 1;
 	pp_update_state();
 }
 
 static void pp_endif()
 {
-	pp_sptr--;
 	pp_ifdef_level_update(-1);
+	if(pp_sptr==0) {
+		LM_WARN("invalid position for preprocessor directive 'endif'"
+				" - at %s line %d\n", (finame)?finame:"cfg", line);
+		return;
+	}
+	pp_sptr--;
 	pp_update_state();
 }
 

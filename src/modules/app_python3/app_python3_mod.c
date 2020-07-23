@@ -53,6 +53,7 @@ static int child_init(int rank);
 static void mod_destroy(void);
 
 PyObject *_sr_apy_handler_obj = NULL;
+PyObject *format_exc_obj = NULL;
 
 char *dname = NULL, *bname = NULL;
 
@@ -577,6 +578,11 @@ static int ki_app_python_exec_p1(sip_msg_t *msg, str *method, str *p1)
 /* clang-format off */
 static sr_kemi_t sr_kemi_app_python_exports[] = {
 	{ str_init("app_python3"), str_init("exec"),
+		SR_KEMIP_INT, ki_app_python_exec,
+		{ SR_KEMIP_STR, SR_KEMIP_NONE, SR_KEMIP_NONE,
+			SR_KEMIP_NONE, SR_KEMIP_NONE, SR_KEMIP_NONE }
+	},
+	{ str_init("app_python3"), str_init("execx"),
 		SR_KEMIP_INT, ki_app_python_exec,
 		{ SR_KEMIP_STR, SR_KEMIP_NONE, SR_KEMIP_NONE,
 			SR_KEMIP_NONE, SR_KEMIP_NONE, SR_KEMIP_NONE }

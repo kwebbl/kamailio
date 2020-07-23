@@ -35,7 +35,6 @@
 #include "../lump_struct.h"
 #include "../flags.h"
 #include "../ip_addr.h"
-#include "../md5utils.h"
 #include "../config.h"
 #include "parse_def.h"
 #include "parse_cseq.h"
@@ -109,17 +108,20 @@ typedef enum request_method {
 #define FL_ADD_XAVP_VIA_PARAMS (1<<21) /*!< add xavp fields to local via params */
 #define FL_USE_XAVP_VIA_FIELDS (1<<22) /*!< use xavp fields for local via attrs */
 #define FL_MSG_NOREPLY       (1<<23) /*!< do not send sip reply for request */
+#define FL_SIPTRACE          (1<<24) /*!< message to be traced in stateless replies */
+#define FL_ROUTE_ADDR        (1<<25) /*!< request has Route address for next hop */
+#define FL_USE_OTCPID        (1<<26) /*!< request to be routed using outboud tcp con id */
 
-/* WARNING: Value (1 << 28) is temporarily reserved for use in kamailio call_control
+/* WARNING: Value (1 << 28) is reserved for use in kamailio call_control
  * module (flag  FL_USE_CALL_CONTROL )! */
 
-/* WARNING: Value (1 << 29) is temporarily reserved for use in kamailio acc
+/* WARNING: Value (1 << 29) is reserved for use in kamailio acc
  * module (flag FL_REQ_UPSTREAM)! */
 
-/* WARNING: Value (1 << 30) is temporarily reserved for use in kamailio
+/* WARNING: Value (1 << 30) is reserved for use in kamailio
  * media proxy module (flag FL_USE_MEDIA_PROXY)! */
 
-/* WARNING: Value (1 << 31) is temporarily reserved for use in kamailio
+/* WARNING: Value (1 << 31) is reserved for use in kamailio
  * nat_traversal module (flag FL_DO_KEEPALIVE)! */
 
 #define FL_MTU_FB_MASK  (FL_MTU_TCP_FB|FL_MTU_TLS_FB|FL_MTU_SCTP_FB)
@@ -127,7 +129,7 @@ typedef enum request_method {
 
 #define IFISMETHOD(methodname,firstchar)                                  \
 if (  (*tmp==(firstchar) || *tmp==((firstchar) | 32)) &&                  \
-		strncasecmp( tmp+1, #methodname +1, methodname##_LEN-1)==0 &&     \
+		strncasecmp( tmp+1, &#methodname[1], methodname##_LEN-1)==0 &&     \
 		*(tmp+methodname##_LEN)==' ') {                                   \
 				fl->type=SIP_REQUEST;                                     \
 				fl->u.request.method.len=methodname##_LEN;                \
@@ -146,9 +148,12 @@ if (  (*tmp==(firstchar) || *tmp==((firstchar) | 32)) &&                  \
 		SIP_VERSION, SIP_VERSION_LEN))
 
 #define IS_HTTP_REPLY(rpl)                                                \
-	((rpl)->first_line.u.reply.version.len >= HTTP_VERSION_LEN && \
+	(((rpl)->first_line.u.reply.version.len >= HTTP_VERSION_LEN && \
 	!strncasecmp((rpl)->first_line.u.reply.version.s,             \
-		HTTP_VERSION, HTTP_VERSION_LEN))
+		HTTP_VERSION, HTTP_VERSION_LEN)) ||                         \
+	((rpl)->first_line.u.reply.version.len >= HTTP2_VERSION_LEN && \
+	!strncasecmp((rpl)->first_line.u.reply.version.s,             \
+		HTTP2_VERSION, HTTP2_VERSION_LEN)))
 
 #define IS_SIP_REPLY(rpl)                                                \
 	((rpl)->first_line.u.reply.version.len >= SIP_VERSION_LEN && \
@@ -263,6 +268,7 @@ typedef struct ocd_flow {
  * - add to msg_ldata_reset() if a field uses dynamic memory */
 typedef struct msg_ldata {
 	ocd_flow_t flow;
+	void *vdata;
 } msg_ldata_t;
 
 /*! \brief The SIP message */
@@ -377,6 +383,7 @@ typedef struct sip_msg {
 	unsigned int reg_id;
 	str ruid;
 	str location_ua;
+	int otcpid; /*!< outbound tcp connection id, if known */
 
 	/* structure with fields that are needed for local processing
 	 * - not cloned to shm, reset to 0 in the clone */
@@ -474,11 +481,11 @@ void reset_ua(struct sip_msg* const msg);
 
 /**
  * struct to identify a msg context
- * - the pair of pid and message-id
+ * - the pair of message-id and pid (fields in sip_msg_t)
  */
 typedef struct msg_ctx_id {
+	unsigned int msgid;
 	int pid;
-	int msgid;
 } msg_ctx_id_t;
 
 /**

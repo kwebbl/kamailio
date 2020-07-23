@@ -50,6 +50,7 @@
 #include "data_lump.h"
 #include "ut.h"
 #include "mem/mem.h"
+#include "crypto/md5utils.h"
 #include "msg_translator.h"
 #include "sr_module.h"
 #include "ip_addr.h"
@@ -406,15 +407,23 @@ int run_check_self_func(str* host, unsigned short port, unsigned short proto)
  */
 int check_self(str* host, unsigned short port, unsigned short proto)
 {
-	if (grep_sock_info(host, port, proto)) goto found;
-	/* try to look into the aliases*/
-	if (grep_aliases(host->s, host->len, port, proto)==0){
-		LM_DBG("host != me\n");
-		return (_check_self_func_list==NULL)?0:run_check_self_func(host,
-														port, proto);
+	int ret = 1;
+	if (grep_sock_info(host, port, proto)) {
+		goto done;
 	}
-found:
-	return 1;
+	/* try to look into the aliases*/
+	if (grep_aliases(host->s, host->len, port, proto)==0) {
+		ret = (_check_self_func_list==NULL)?0:run_check_self_func(host,
+					port, proto);
+	}
+
+done:
+	if(ret==1) {
+		LM_DBG("host (%d:%.*s:%d) == me\n", proto, host->len, host->s, port);
+	} else {
+		LM_DBG("host (%d:%.*s:%d) != me\n", proto, host->len, host->s, port);
+	}
+	return ret;
 }
 
 /** checks if the proto:port is one of the ports we listen on;
@@ -423,11 +432,14 @@ found:
  */
 int check_self_port(unsigned short port, unsigned short proto)
 {
-	if (grep_sock_info_by_port(port, proto))
-		/* as aliases do not contain different ports we can skip them */
+	/* aliases do not contain different ports we can skip them */
+	if (grep_sock_info_by_port(port, proto)) {
+		LM_DBG("proto:port (%d:%d) == me\n", proto, port);
 		return 1;
-	else
+	} else {
+		LM_DBG("proto:port (%d:%d) != me\n", proto, port);
 		return 0;
+	}
 }
 
 
@@ -471,6 +483,7 @@ int forward_request(struct sip_msg* msg, str* dst, unsigned short port,
 
 	prev_send_sock=0;
 	err=0;
+	memset(&dns_srv_h, 0, sizeof(struct dns_srv_handle));
 #endif
 
 	buf=0;
@@ -609,8 +622,6 @@ int forward_request(struct sip_msg* msg, str* dst, unsigned short port,
 		}else{
 			p_onsend=0;
 			ret=ser_error=E_OK;
-			/* sent requests stats */
-			STATS_TX_REQUEST(  msg->first_line.u.request.method_value );
 			/* exit succcesfully */
 			goto end;
 		}
@@ -629,7 +640,6 @@ int forward_request(struct sip_msg* msg, str* dst, unsigned short port,
 #endif
 
 error:
-	STATS_TX_DROPS;
 end:
 #ifdef USE_DNS_FAILOVER
 	if (dst && cfg_get(core, core_cfg, use_dns_failover)){
@@ -829,10 +839,6 @@ static int do_forward_reply(struct sip_msg* msg, int mode)
 			(int) msg->via2->port);
 
 	done:
-#ifdef STATS
-	STATS_TX_RESPONSE(  (msg->first_line.u.reply.statuscode/100) );
-#endif
-
 	LM_DBG("reply forwarding finished (2nd via address: %.*s port %d)\n",
 			msg->via2->host.len, msg->via2->host.s,
 			(int) msg->via2->port);
